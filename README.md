@@ -36,3 +36,5 @@ Finally, run `concatenate_video.py` to concatenate the fragments. if your video 
 ## Requirements
 
 See `requirements.txt`
+
+`pip install -r requirements.txt`
