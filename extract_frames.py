@@ -1,9 +1,9 @@
+import argparse 
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 import os 
-import time
 import warnings
 
 from PIL import Image
@@ -11,6 +11,21 @@ from typing import Callable, Tuple, List
 from tqdm import tqdm
 
 ZF = 4
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Extract frames from a video and preprocess them.")
+
+    parser.add_argument("--file_path", type=str, help="Path to the input video file.")
+    parser.add_argument("--save_path", type=str, default=None, help="Path where video fragments will be saved.")
+    parser.add_argument("--image_path", type=str, default=None, help="Path to the image to unscramble.")
+    parser.add_argument("--ordering_path", type=str, default=None, help="Path to the ordering of the tiles.")
+
+    parser.add_argument("--frame_range", type=int, nargs=2, help="Range of frames to extract.")
+    parser.add_argument("--frames_per_save", type=int, default=30, help="Number of frames to include in each video fragment.")
+
+    args = parser.parse_args()
+    return args
+
 
 def extract_frames(file_path: str, frame_range: List[int], func: Callable[[np.ndarray, float, str], None], frame_size: Tuple[int, int] = None, save_path: str = None, frames_per_save: int = 30, **func_kwargs) -> None:
     """
@@ -117,28 +132,29 @@ def bad_apple_cj_qual(frame: np.ndarray, fps: float, image: Image.Image, orderin
     
     return np.array(image_modded)
 
-def main():
-    file_path = "bad_apple/bad_apple.mp4"
-    save_path = "video_fragments/"
-    image_path = "image/great_wave_scrambled.png"
-    ordering_path = "image/great_wave_order.txt"
+def main(args):
+    # args.file_path = "bad_apple/bad_apple.mp4"
+    # args.save_path = "video_fragments/"
+    # args.image_path = "image/great_wave_scrambled.png"
+    # args.ordering_path = "image/great_wave_order.txt"
 
+    # args.frame_range = [600, 900]
+    # args.frames_per_save = 30
     # the image is (1104,1600) with tile size (16,16)
     # frame_size is then (1104//16,1600//16) = (69,100)
     frame_size = (69, 100)
     tile_size = (16, 16)
-    frame_range = [600, 900]
-    frames_per_save = 30
 
-    image = Image.open(image_path)
+    image = Image.open(args.image_path)
 
-    with open(ordering_path, 'r') as f:
+    with open(args.ordering_path, 'r') as f:
         ordering = [int(x) for x in f.read().strip().splitlines()]
 
-    extract_frames(file_path=file_path, frame_range=frame_range, 
+    extract_frames(file_path=args.file_path, frame_range=args.frame_range, 
                    func=bad_apple_cj_qual, frame_size=frame_size, 
                    image=image, ordering=ordering, tile_size=tile_size,
-                   save_path=save_path, frames_per_save=frames_per_save)
+                   save_path=args.save_path, frames_per_save=args.frames_per_save)
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(args)

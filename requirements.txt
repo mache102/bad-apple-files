@@ -1,0 +1,5 @@
+opencv-python 
+matplotlib 
+numpy 
+Pillow 
+tqdm
