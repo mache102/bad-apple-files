@@ -19,14 +19,15 @@ python extract_frames.py --file_path "path/to/video.mp4" --save_path "path/to/sa
 - `--image_path`: Path to the image used for unscrambling.
 - `--ordering_path`: Path to the ordering of the tiles.
 - `--frame_range`: Range of frames to extract, specified as two integers `start_frame` and `end_frame`.
-- `--frames_per_save`: Number of frames to include in each video fragment.
+- `--frames_per_save`: Number of frames to include in each video fragment.  
+- `--tile_size`: Size of the tiles in the image.  
 
 ### Example
 
 For example, if you want to extract frames from the video "bad_apple.mp4" in the "bad_apple" directory, process frames within the range of 0 to 300, and save video fragments in the "video_fragments" directory:
 
 ```bash
-python extract_frames.py --file_path "bad_apple/bad_apple.mp4" --save_path "video_fragments/" --frame_range 0 300 --image_path "image/great_wave_scrambled.png" --ordering_path "image/great_wave_order.txt" 
+python extract_frames.py --file_path "bad_apple/bad_apple.mp4" --save_path "video_fragments/" --frame_range 0 300 --image_path "image/great_wave_scrambled.png" --ordering_path "image/great_wave_order.txt" --tile_size 16 16
 ```
 (create the save directory first)  
 

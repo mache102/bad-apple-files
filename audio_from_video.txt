@@ -1,0 +1,1 @@
+ffmpeg -i bad_apple/bad_apple.mp4 -ab 160k -ac 2 -ar 44100 -vn bad_apple/bad_apple.wav

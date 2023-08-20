@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 import os 
+# import time
 import warnings
 
 from PIL import Image
@@ -12,6 +13,10 @@ from tqdm import tqdm
 
 ZF = 4
 
+"""
+python extract_frames.py --file_path "bad_apple/bad_apple.mp4" --save_path "crop_video_fragments/" --frame_range 0 600 --image_path "image/great_wave_scrambled.png" --ordering_path "image/great_wave_order.txt" --tile_size 16 16
+"""
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Extract frames from a video and preprocess them.")
 
@@ -19,6 +24,7 @@ def parse_args():
     parser.add_argument("--save_path", type=str, default=None, help="Path where video fragments will be saved.")
     parser.add_argument("--image_path", type=str, default=None, help="Path to the image to unscramble.")
     parser.add_argument("--ordering_path", type=str, default=None, help="Path to the ordering of the tiles.")
+    parser.add_argument("--tile_size", type=int, nargs=2, default=(16, 16), help="Size of the tiles in the image.")
 
     parser.add_argument("--frame_range", type=int, nargs=2, help="Range of frames to extract.")
     parser.add_argument("--frames_per_save", type=int, default=30, help="Number of frames to include in each video fragment.")
@@ -47,7 +53,11 @@ def extract_frames(file_path: str, frame_range: List[int], func: Callable[[np.nd
     frame_range[0] = max(0, frame_range[0])
     frame_range[1] = min(frame_range[1], max_frames)
 
-    fig = plt.figure()
+    fig_size = (frame_size[1] / 10, frame_size[0] / 10)
+    fig = plt.figure(figsize=fig_size, frameon=False)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
     ims = []
 
     if frame_range[0] > 0:
@@ -78,25 +88,31 @@ def extract_frames(file_path: str, frame_range: List[int], func: Callable[[np.nd
             frames_in_fragment += 1
             if frames_in_fragment >= frames_per_save:    
 
-                ani = animation.ArtistAnimation(fig, ims, interval=30, blit=True, repeat_delay=1000)
+                ani = animation.ArtistAnimation(fig, ims, interval=1000 / fps, blit=True, repeat_delay=1000)
                 fragment_save_path = os.path.join(save_path, f"{str(fragment_count).zfill(ZF)}.mp4")
                 ani.save(fragment_save_path, writer='ffmpeg')
                 fragment_count += 1
                 frames_in_fragment = 0
-                fig = plt.figure()
+
+                # reinitialize the figure
+                fig = plt.figure(figsize=fig_size, frameon=False)
+                ax = plt.Axes(fig, [0., 0., 1., 1.])
+                ax.set_axis_off()
+                fig.add_axes(ax)
                 ims = []
 
         else:
             warnings.warn(f"Frame {i} not found")
 
     if ims:
-        ani = animation.ArtistAnimation(fig, ims, interval=1000 // fps, blit=True, repeat_delay=1000)
+        ani = animation.ArtistAnimation(fig, ims, interval=1000 / fps, blit=True, repeat_delay=1000)
         fragment_save_path = os.path.join(save_path, f"{str(fragment_count).zfill(ZF)}.mp4")
         ani.save(fragment_save_path, writer='ffmpeg')
 
 
 
 def bad_apple_cj_qual(frame: np.ndarray, fps: float, image: Image.Image, ordering: List[int], tile_size: Tuple[int, int]):
+    # t1 = time.time()
 
     _, frame = cv2.threshold(frame, 127, 255, cv2.THRESH_BINARY)
 
@@ -116,7 +132,7 @@ def bad_apple_cj_qual(frame: np.ndarray, fps: float, image: Image.Image, orderin
     for row in range(rows):
         for col in range(cols):
 
-            # unscramble only if the frame at this point is white
+            # unscramble only if the pixel is (0, 0, 0)
             if frame[col, row] != 0:
                 continue 
 
@@ -129,6 +145,8 @@ def bad_apple_cj_qual(frame: np.ndarray, fps: float, image: Image.Image, orderin
                                   (new_col + 1) * tile_width, (new_row + 1) * tile_height))
 
             image_modded.paste(new_tile, (col * tile_width, row * tile_height))
+
+    # print(time.time() - t1)
     
     return np.array(image_modded)
 
@@ -142,17 +160,19 @@ def main(args):
     # args.frames_per_save = 30
     # the image is (1104,1600) with tile size (16,16)
     # frame_size is then (1104//16,1600//16) = (69,100)
-    frame_size = (69, 100)
-    tile_size = (16, 16)
+    # frame_size = (69, 100)
+    # tile_size = (16, 16)
 
     image = Image.open(args.image_path)
+    image_size = image.size
+    frame_size = (image_size[1] // args.tile_size[0], image_size[0] // args.tile_size[1])
 
     with open(args.ordering_path, 'r') as f:
         ordering = [int(x) for x in f.read().strip().splitlines()]
 
     extract_frames(file_path=args.file_path, frame_range=args.frame_range, 
                    func=bad_apple_cj_qual, frame_size=frame_size, 
-                   image=image, ordering=ordering, tile_size=tile_size,
+                   image=image, ordering=ordering, tile_size=args.tile_size,
                    save_path=args.save_path, frames_per_save=args.frames_per_save)
 
 if __name__ == "__main__":
